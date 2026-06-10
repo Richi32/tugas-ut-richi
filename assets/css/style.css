@@ -1,0 +1,175 @@
+/* style.css - Gaya global minimal, tanpa desain berlebihan */
+
+body {
+    font-family: Arial, sans-serif;
+    font-size: 14px;
+    margin: 0;
+    padding: 10px;
+}
+
+/* === NAVIGASI === */
+nav button {
+    margin-right: 5px;
+    padding: 6px 14px;
+    cursor: pointer;
+}
+
+nav button.aktif {
+    font-weight: bold;
+    background-color: #ddd;
+}
+
+/* === TABEL === */
+table {
+    border-collapse: collapse;
+    width: 100%;
+    margin-top: 10px;
+}
+
+th, td {
+    border: 1px solid #999;
+    padding: 6px 10px;
+    text-align: left;
+}
+
+th {
+    background-color: #eee;
+}
+
+/* === BADGE STATUS === */
+.aman   { color: green; font-weight: bold; }
+.menipis { color: orange; font-weight: bold; }
+.kosong  { color: red; font-weight: bold; }
+
+/* === TOOLTIP === */
+.tooltip-wrapper {
+    position: relative;
+    display: inline-block;
+}
+
+.tooltip-box {
+    display: none;
+    position: absolute;
+    bottom: 125%;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #333;
+    color: #fff;
+    padding: 5px 8px;
+    border-radius: 4px;
+    white-space: nowrap;
+    font-size: 12px;
+    z-index: 100;
+}
+
+.tooltip-wrapper:hover .tooltip-box {
+    display: block;
+}
+
+/* === MODAL === */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-box {
+    background: #fff;
+    padding: 20px;
+    min-width: 380px;
+    max-width: 600px;
+    width: 90%;
+    border: 1px solid #999;
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #ccc;
+    padding-bottom: 8px;
+}
+
+.modal-footer {
+    margin-top: 12px;
+    border-top: 1px solid #ccc;
+    padding-top: 10px;
+    text-align: right;
+}
+
+.modal-footer button {
+    margin-left: 6px;
+}
+
+/* === FORM === */
+.form-row {
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.form-row label {
+    min-width: 130px;
+    font-weight: bold;
+}
+
+.form-row input,
+.form-row select {
+    flex: 1;
+    padding: 4px 6px;
+}
+
+.err { color: red; font-size: 12px; }
+
+/* === FILTER & SORT PANEL === */
+.filter-panel {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 10px;
+    background: #fafafa;
+}
+
+.filter-panel label { margin-right: 5px; }
+.filter-panel select,
+.filter-panel input { margin-right: 10px; }
+
+/* === TRACKING === */
+.do-card {
+    border: 1px solid #ccc;
+    padding: 10px;
+    margin-bottom: 12px;
+    background: #fafafa;
+}
+
+.do-card h4 { margin: 0 0 8px 0; }
+
+.perjalanan-list { margin-top: 8px; padding-left: 16px; }
+.perjalanan-list li { margin-bottom: 4px; font-size: 13px; }
+
+/* === PAKET DETAIL === */
+.paket-detail {
+    background: #f0f0f0;
+    border: 1px solid #ccc;
+    padding: 6px 10px;
+    margin-top: 6px;
+    font-size: 13px;
+}
+
+/* === UMUM === */
+.error-global {
+    color: red;
+    padding: 10px;
+    border: 1px solid red;
+    margin: 10px 0;
+}
+
+hr { margin: 15px 0; }
+
+[v-cloak] { display: none; }

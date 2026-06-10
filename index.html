@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SITTA - Bahan Ajar Universitas Terbuka</title>
+    <link rel="stylesheet" href="assets/css/style.css">
+</head>
+<body>
+
+<div id="app" v-cloak>
+
+    <!-- ===== HEADER ===== -->
+    <h1>SITTA – Sistem Informasi Tiras &amp; Transaksi Bahan Ajar UT</h1>
+
+    <!-- ===== NAVIGASI TAB ===== -->
+    <nav>
+        <button type="button"
+                :class="{ aktif: tab === 'stok' }"
+                @click="setTab('stok')">
+            Stok Bahan Ajar
+        </button>
+        <button type="button"
+                :class="{ aktif: tab === 'order' }"
+                @click="setTab('order')">
+            Buat Delivery Order
+        </button>
+        <button type="button"
+                :class="{ aktif: tab === 'tracking' }"
+                @click="setTab('tracking')">
+            Tracking DO
+        </button>
+    </nav>
+
+    <hr>
+
+    <!-- ===== LOADING / ERROR STATE ===== -->
+    <p v-if="loading">Memuat data, mohon tunggu...</p>
+    <p v-else-if="errorMsg" class="error-global">{{ errorMsg }}</p>
+
+    <!-- ===== KONTEN UTAMA (tab routing) ===== -->
+    <div v-else>
+
+        <!-- TAB 1: Stok Bahan Ajar -->
+        <ba-stock-table
+            v-if="tab === 'stok'"
+            :stok="stok"
+            :upbjj-list="upbjjList"
+            :kategori-list="kategoriList"
+            @update-stok="updateStok">
+        </ba-stock-table>
+
+        <!-- TAB 2: Buat DO -->
+        <ba-order-form
+            v-else-if="tab === 'order'"
+            :paket-list="paketList"
+            :pengiriman-list="pengirimanList"
+            :tracking-list="tracking"
+            @add-do="tambahDo">
+        </ba-order-form>
+
+        <!-- TAB 3: Tracking DO -->
+        <ba-do-tracking
+            v-else-if="tab === 'tracking'"
+            :tracking-list="tracking"
+            :paket-list="paketList"
+            @update-tracking="updateTracking">
+        </ba-do-tracking>
+
+    </div>
+
+</div><!-- /#app -->
+
+<!-- Vue.js 2 (full build, dengan compiler agar template string bisa dikompilasi) -->
+<script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.js"></script>
+
+<!-- Service (harus dimuat sebelum komponen) -->
+<script src="js/services/api.js"></script>
+
+<!-- Komponen Vue (urutan: komponen dasar dulu, baru yang menggunakan) -->
+<script src="js/components/app-modal.js"></script>
+<script src="js/components/status-badge.js"></script>
+<script src="js/components/stock-table.js"></script>
+<script src="js/components/order-form.js"></script>
+<script src="js/components/do-tracking.js"></script>
+
+<!-- Root Vue instance (harus paling terakhir) -->
+<script src="js/app.js"></script>
+
+</body>
+</html>
