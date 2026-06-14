@@ -71,6 +71,335 @@
 
 </div><!-- /#app -->
 
+<!-- ===== TEMPLATE KOMPONEN ===== -->
+<script type="text/x-template" id="tpl-status-badge">
+    <span class="tooltip-wrapper">
+        <span v-if="qty === 0" class="kosong">Kosong</span>
+        <span v-else-if="qty < safety" class="menipis">Menipis</span>
+        <span v-else class="aman">Aman</span>
+        <span v-if="catatan" class="tooltip-box" v-html="catatan"></span>
+    </span>
+</script>
+
+<script type="text/x-template" id="tpl-app-modal">
+    <div v-if="visible" class="modal-overlay">
+        <div class="modal-box">
+            <div class="modal-header">
+                <h3>{{ title }}</h3>
+                <button type="button" @click="$emit('close')">Tutup</button>
+            </div>
+            <div>
+                <slot></slot>
+            </div>
+            <div class="modal-footer">
+                <slot name="footer"></slot>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script type="text/x-template" id="tpl-stock-table">
+    <section>
+        <h2>Stok Bahan Ajar</h2>
+
+        <div class="filter-panel">
+            <label for="filter-upbjj">UT-Daerah</label>
+            <select id="filter-upbjj" v-model="filterUpbjj">
+                <option value="">Semua UT-Daerah</option>
+                <option v-for="upbjj in upbjjList" :key="upbjj" :value="upbjj">{{ upbjj }}</option>
+            </select>
+
+            <span v-show="filterUpbjj">
+                <label for="filter-kategori">Kategori</label>
+                <select id="filter-kategori" v-model="filterKategori">
+                    <option value="">Semua Kategori</option>
+                    <option v-for="kategori in kategoriList" :key="kategori" :value="kategori">{{ kategori }}</option>
+                </select>
+            </span>
+
+            <label>
+                <input type="checkbox" v-model="filterLowStock">
+                Stok reorder/kosong
+            </label>
+
+            <label for="sort-by">Urutkan</label>
+            <select id="sort-by" v-model="sortBy">
+                <option value="judul">Judul</option>
+                <option value="qty">Stok</option>
+                <option value="harga">Harga</option>
+            </select>
+
+            <select v-model="sortOrder">
+                <option value="asc">Naik</option>
+                <option value="desc">Turun</option>
+            </select>
+
+            <button type="button" @click="resetFilter">Reset</button>
+            <button type="button" @click="bukaModalTambah">Tambah Bahan Ajar</button>
+        </div>
+
+        <p v-if="stokTerfilter.length === 0">Data stok tidak ditemukan.</p>
+
+        <table v-else>
+            <thead>
+                <tr>
+                    <th>Kode/Nama Mata Kuliah</th>
+                    <th>Kategori</th>
+                    <th>UT-Daerah</th>
+                    <th>Lokasi Rak</th>
+                    <th>Harga</th>
+                    <th>Qty</th>
+                    <th>Safety</th>
+                    <th>Status</th>
+                    <th>Aksi</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="item in stokTerfilter" :key="item.kode">
+                    <td><strong>{{ item.kode }}</strong><br><span v-text="item.judul"></span></td>
+                    <td>{{ item.kategori }}</td>
+                    <td>{{ item.upbjj }}</td>
+                    <td>{{ item.lokasiRak }}</td>
+                    <td>{{ item.harga | currency }}</td>
+                    <td>{{ item.qty | unitBuah }}</td>
+                    <td>{{ item.safety | unitBuah }}</td>
+                    <td>
+                        <ba-status-badge
+                            :qty="Number(item.qty)"
+                            :safety="Number(item.safety)"
+                            :catatan="item.catatanHTML">
+                        </ba-status-badge>
+                    </td>
+                    <td>
+                        <button type="button" @click="bukaModalEdit(item)">Edit</button>
+                        <button type="button" @click="bukaModalHapus(item)">Delete</button>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+
+        <ba-app-modal :visible="showModalTambah" title="Tambah Bahan Ajar" @close="tutupModalTambah">
+            <form @submit.prevent="simpanTambah">
+                <div class="form-row">
+                    <label>Kode MK</label>
+                    <input v-model.trim="form.kode" @keyup.enter="simpanTambah">
+                    <span class="err">{{ err.kode }}</span>
+                </div>
+                <div class="form-row">
+                    <label>Nama MK</label>
+                    <input v-model.trim="form.judul" @keyup.enter="simpanTambah">
+                    <span class="err">{{ err.judul }}</span>
+                </div>
+                <div class="form-row">
+                    <label>Kategori</label>
+                    <select v-model="form.kategori" @keyup.enter="simpanTambah">
+                        <option value="">Pilih kategori</option>
+                        <option v-for="kategori in kategoriList" :key="kategori" :value="kategori">{{ kategori }}</option>
+                    </select>
+                    <span class="err">{{ err.kategori }}</span>
+                </div>
+                <div class="form-row">
+                    <label>UT-Daerah</label>
+                    <select v-model="form.upbjj" @keyup.enter="simpanTambah">
+                        <option value="">Pilih UT-Daerah</option>
+                        <option v-for="upbjj in upbjjList" :key="upbjj" :value="upbjj">{{ upbjj }}</option>
+                    </select>
+                    <span class="err">{{ err.upbjj }}</span>
+                </div>
+                <div class="form-row">
+                    <label>Lokasi Rak</label>
+                    <input v-model.trim="form.lokasiRak" @keyup.enter="simpanTambah">
+                    <span class="err">{{ err.lokasiRak }}</span>
+                </div>
+                <div class="form-row">
+                    <label>Harga</label>
+                    <input type="number" min="0" v-model.number="form.harga" @keyup.enter="simpanTambah">
+                    <span class="err">{{ err.harga }}</span>
+                </div>
+                <div class="form-row">
+                    <label>Qty</label>
+                    <input type="number" min="0" v-model.number="form.qty" @keyup.enter="simpanTambah">
+                    <span class="err">{{ err.qty }}</span>
+                </div>
+                <div class="form-row">
+                    <label>Safety</label>
+                    <input type="number" min="0" v-model.number="form.safety" @keyup.enter="simpanTambah">
+                    <span class="err">{{ err.safety }}</span>
+                </div>
+                <div class="form-row">
+                    <label>Catatan HTML</label>
+                    <textarea v-model.trim="form.catatanHTML"></textarea>
+                </div>
+                <button type="submit">Simpan</button>
+            </form>
+            <template v-slot:footer>
+                <button type="button" @click="tutupModalTambah">Batal</button>
+            </template>
+        </ba-app-modal>
+
+        <ba-app-modal :visible="showModalEdit" title="Edit Bahan Ajar" @close="tutupModalEdit">
+            <form v-if="formEdit" @submit.prevent="simpanEdit">
+                <div class="form-row">
+                    <label>Kode MK</label>
+                    <input v-model="formEdit.kode" disabled>
+                </div>
+                <div class="form-row">
+                    <label>Nama MK</label>
+                    <input v-model.trim="formEdit.judul" @keyup.enter="simpanEdit">
+                    <span class="err">{{ errEdit.judul }}</span>
+                </div>
+                <div class="form-row">
+                    <label>Kategori</label>
+                    <select v-model="formEdit.kategori" @keyup.enter="simpanEdit">
+                        <option v-for="kategori in kategoriList" :key="kategori" :value="kategori">{{ kategori }}</option>
+                    </select>
+                    <span class="err">{{ errEdit.kategori }}</span>
+                </div>
+                <div class="form-row">
+                    <label>UT-Daerah</label>
+                    <select v-model="formEdit.upbjj" @keyup.enter="simpanEdit">
+                        <option v-for="upbjj in upbjjList" :key="upbjj" :value="upbjj">{{ upbjj }}</option>
+                    </select>
+                    <span class="err">{{ errEdit.upbjj }}</span>
+                </div>
+                <div class="form-row">
+                    <label>Lokasi Rak</label>
+                    <input v-model.trim="formEdit.lokasiRak" @keyup.enter="simpanEdit">
+                    <span class="err">{{ errEdit.lokasiRak }}</span>
+                </div>
+                <div class="form-row">
+                    <label>Harga</label>
+                    <input type="number" min="0" v-model.number="formEdit.harga" @keyup.enter="simpanEdit">
+                    <span class="err">{{ errEdit.harga }}</span>
+                </div>
+                <div class="form-row">
+                    <label>Qty</label>
+                    <input type="number" min="0" v-model.number="formEdit.qty" @keyup.enter="simpanEdit">
+                    <span class="err">{{ errEdit.qty }}</span>
+                </div>
+                <div class="form-row">
+                    <label>Safety</label>
+                    <input type="number" min="0" v-model.number="formEdit.safety" @keyup.enter="simpanEdit">
+                    <span class="err">{{ errEdit.safety }}</span>
+                </div>
+                <div class="form-row">
+                    <label>Catatan HTML</label>
+                    <textarea v-model.trim="formEdit.catatanHTML"></textarea>
+                </div>
+                <button type="submit">Update</button>
+            </form>
+            <template v-slot:footer>
+                <button type="button" @click="tutupModalEdit">Batal</button>
+            </template>
+        </ba-app-modal>
+
+        <ba-app-modal :visible="showModalHapus" title="Konfirmasi Hapus" @close="tutupModalHapus">
+            <p v-if="itemHapus">Hapus data {{ itemHapus.kode }} - {{ itemHapus.judul }}?</p>
+            <template v-slot:footer>
+                <button type="button" @click="tutupModalHapus">Batal</button>
+                <button type="button" @click="konfirmasiHapus">Hapus</button>
+            </template>
+        </ba-app-modal>
+    </section>
+</script>
+
+<script type="text/x-template" id="tpl-order-form">
+    <section>
+        <h2>Buat Delivery Order</h2>
+        <form @submit.prevent="submitForm">
+            <div class="form-row">
+                <label>Nomor DO</label>
+                <input :value="nomorDoOtomatis" disabled>
+            </div>
+            <div class="form-row">
+                <label>NIM</label>
+                <input v-model.trim="form.nim" @keyup.enter="submitForm">
+                <span class="err">{{ err.nim }}</span>
+            </div>
+            <div class="form-row">
+                <label>Nama</label>
+                <input v-model.trim="form.nama" @keyup.enter="submitForm">
+                <span class="err">{{ err.nama }}</span>
+            </div>
+            <div class="form-row">
+                <label>Ekspedisi</label>
+                <select v-model="form.ekspedisi" @keyup.enter="submitForm">
+                    <option value="">Pilih ekspedisi</option>
+                    <option v-for="p in pengirimanList" :key="p.kode" :value="p.nama">{{ p.nama }}</option>
+                </select>
+                <span class="err">{{ err.ekspedisi }}</span>
+            </div>
+            <div class="form-row">
+                <label>Paket Bahan Ajar</label>
+                <select v-model="form.paketKode" @keyup.enter="submitForm">
+                    <option value="">Pilih paket</option>
+                    <option v-for="paket in paketList" :key="paket.kode" :value="paket.kode">
+                        {{ paket.kode }} - {{ paket.nama }}
+                    </option>
+                </select>
+                <span class="err">{{ err.paketKode }}</span>
+            </div>
+
+            <div v-if="paketDipilih" class="paket-detail">
+                <p><strong>{{ paketDipilih.kode }}</strong> - {{ paketDipilih.nama }}</p>
+                <p>Isi paket: {{ paketDipilih.isi.join(', ') }}</p>
+                <p>Total harga: {{ totalHarga | currency }}</p>
+            </div>
+
+            <div class="form-row">
+                <label>Tanggal Kirim</label>
+                <input v-model.trim="form.tanggalKirim" @keyup.enter="submitForm">
+                <span class="err">{{ err.tanggalKirim }}</span>
+            </div>
+            <button type="submit">Buat DO</button>
+            <button type="button" @click="resetForm">Reset</button>
+        </form>
+    </section>
+</script>
+
+<script type="text/x-template" id="tpl-do-tracking">
+    <section>
+        <h2>Tracking Delivery Order</h2>
+        <div>
+            <label for="tracking-query">Nomor DO / NIM</label>
+            <input id="tracking-query"
+                   v-model.trim="query"
+                   @keyup.enter="cari"
+                   @keyup.esc="resetCari">
+            <button type="button" @click="cari">Cari</button>
+            <button type="button" @click="resetCari">Reset</button>
+        </div>
+
+        <p v-if="sudahCari && hasilCari.length === 0">Data tracking tidak ditemukan.</p>
+
+        <div v-for="hasil in hasilCari" :key="hasil.nomorDo" class="do-card">
+            <h4>{{ hasil.nomorDo }}</h4>
+            <p>NIM: {{ hasil.data.nim }}</p>
+            <p>Nama: {{ hasil.data.nama }}</p>
+            <p>Status: {{ hasil.data.status }}</p>
+            <p>Ekspedisi: {{ hasil.data.ekspedisi }}</p>
+            <p>Tanggal Kirim: {{ hasil.data.tanggalKirim }}</p>
+            <p>Paket: {{ hasil.data.paket }} <span v-if="getInfoPaket(hasil.data.paket)">- {{ getInfoPaket(hasil.data.paket).nama }}</span></p>
+            <p>Total: {{ hasil.data.total | currency }}</p>
+
+            <strong>Progress Pengiriman</strong>
+            <ul class="perjalanan-list">
+                <li v-for="(p, index) in hasil.data.perjalanan" :key="index">
+                    {{ p.waktu }} - {{ p.keterangan }}
+                </li>
+            </ul>
+
+            <div class="form-row">
+                <label>Tambah Progress</label>
+                <input v-model.trim="inputProgress[hasil.nomorDo]"
+                       @keyup.enter="tambahProgress(hasil.nomorDo)">
+                <button type="button" @click="tambahProgress(hasil.nomorDo)">Tambah</button>
+                <span class="err">{{ errProgress[hasil.nomorDo] }}</span>
+            </div>
+        </div>
+    </section>
+</script>
+
 <!-- Vue.js 2 (full build, dengan compiler agar template string bisa dikompilasi) -->
 <script src="https://cdn.jsdelivr.net/npm/vue@2.7.16/dist/vue.js"></script>
 

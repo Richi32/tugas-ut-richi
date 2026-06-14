@@ -4,8 +4,7 @@
  * 1. Filter Global: currency, unitBuah
  * 2. Root Vue (#app): load data, routing tab, update & simpan data
  *
- * loadData() sekarang SINKRON (tidak pakai async/await)
- * karena data sudah di-embed langsung di api.js
+ * loadData() membaca dataBahanAjar.json melalui ApiService.
  */
 
 // ===== FILTER GLOBAL =====
@@ -29,6 +28,7 @@ new Vue({
     data: function () {
         return {
             tab:            'stok',  // 'stok' | 'order' | 'tracking'
+            loading:        true,
             errorMsg:       '',
 
             upbjjList:      [],
@@ -40,19 +40,22 @@ new Vue({
         };
     },
 
-    // created: muat data (sinkron, tidak perlu async)
+    // created: muat data dari dataBahanAjar.json
     created: function () {
-        try {
-            var data           = ApiService.loadData();
-            this.upbjjList     = data.upbjjList      || [];
-            this.kategoriList  = data.kategoriList   || [];
-            this.pengirimanList= data.pengirimanList  || [];
-            this.paketList     = data.paket           || [];
-            this.stok          = data.stok            || [];
-            this.tracking      = data.tracking        || [];
-        } catch (e) {
-            this.errorMsg = 'Gagal memuat data: ' + e.message;
-        }
+        ApiService.loadData()
+            .then(function (data) {
+                this.upbjjList      = data.upbjjList       || [];
+                this.kategoriList   = data.kategoriList    || [];
+                this.pengirimanList = data.pengirimanList  || [];
+                this.paketList      = data.paket           || [];
+                this.stok           = data.stok            || [];
+                this.tracking       = data.tracking        || [];
+                this.loading        = false;
+            }.bind(this))
+            .catch(function (e) {
+                this.errorMsg = 'Gagal memuat data: ' + e.message;
+                this.loading  = false;
+            }.bind(this));
     },
 
     methods: {

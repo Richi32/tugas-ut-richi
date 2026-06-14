@@ -19,6 +19,7 @@ Vue.component('ba-do-tracking', {
     data: function () {
         return {
             localTracking:  [],
+            sedangSinkronProp: false,
             query:          '',
             queryAktif:     '',
             sudahCari:      false,
@@ -31,7 +32,11 @@ Vue.component('ba-do-tracking', {
         // Watcher 1: Sync prop → localTracking saat parent update
         trackingList: {
             handler: function (baru) {
+                this.sedangSinkronProp = true;
                 this.localTracking = JSON.parse(JSON.stringify(baru));
+                this.$nextTick(function () {
+                    this.sedangSinkronProp = false;
+                });
             },
             immediate: true
         },
@@ -39,6 +44,7 @@ Vue.component('ba-do-tracking', {
         // Watcher 2: Emit ke parent setiap localTracking berubah
         localTracking: {
             handler: function (baru) {
+                if (this.sedangSinkronProp) return;
                 this.$emit('update-tracking', baru);
             },
             deep: true

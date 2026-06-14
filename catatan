@@ -1,0 +1,5 @@
+jalan
+python3 -m http.server 8000
+
+matikan
+pkill -f "python3 -m http.server 8000"

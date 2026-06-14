@@ -21,6 +21,7 @@ Vue.component('ba-stock-table', {
     data: function () {
         return {
             localStok: [],
+            sedangSinkronProp: false,
 
             // Filter state
             filterUpbjj:    '',
@@ -60,15 +61,21 @@ Vue.component('ba-stock-table', {
         // Watcher 2: Emit update ke parent setiap localStok berubah (deep watch)
         localStok: {
             handler: function (baru) {
+                if (this.sedangSinkronProp) return;
                 this.$emit('update-stok', baru);
             },
-            deep: true
+            deep: true,
+            immediate: false
         },
 
         // Sync prop → localStok saat pertama load
         stok: {
             handler: function (baru) {
+                this.sedangSinkronProp = true;
                 this.localStok = JSON.parse(JSON.stringify(baru));
+                this.$nextTick(function () {
+                    this.sedangSinkronProp = false;
+                });
             },
             immediate: true
         }

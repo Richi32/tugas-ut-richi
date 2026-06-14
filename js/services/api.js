@@ -1,9 +1,8 @@
 /**
  * api.js – Service data SITTA
  *
- * Data JSON di-embed langsung di sini agar bisa dibuka via file://
- * tanpa perlu web server (tidak ada fetch()).
- * Persistensi tetap menggunakan localStorage.
+ * Membaca data awal dari dataBahanAjar.json.
+ * Persistensi perubahan CRUD menggunakan localStorage.
  */
 const ApiService = {
     STORAGE_KEY: 'sitta_data_v1',
@@ -13,8 +12,8 @@ const ApiService = {
         upbjjList: ["Jakarta", "Surabaya", "Makassar", "Padang", "Denpasar"],
         kategoriList: ["MK Wajib", "MK Pilihan", "Praktikum", "Problem-Based"],
         pengirimanList: [
-            { kode: "REG", nama: "Reguler (3-5 hari)" },
-            { kode: "EXP", nama: "Ekspres (1-2 hari)" }
+            { kode: "REG", nama: "JNE Regular" },
+            { kode: "EXP", nama: "JNE Express" }
         ],
         paket: [
             {
@@ -94,21 +93,73 @@ const ApiService = {
         ]
     },
 
-    // loadData sekarang SINKRON (tidak butuh async/fetch)
+    DATA_URL: 'dataBahanAjar.json',
+
     loadData: function () {
         var saved = localStorage.getItem(this.STORAGE_KEY);
         if (saved) {
-            try { return JSON.parse(saved); } catch (e) {
+            try { return Promise.resolve(this.normalizeData(JSON.parse(saved))); } catch (e) {
                 console.warn('localStorage rusak, pakai data default.');
             }
         }
-        // Clone default agar tidak termutasi
-        var data = JSON.parse(JSON.stringify(this._defaultData));
-        this.saveData(data);
-        return data;
+
+        return fetch(this.DATA_URL)
+            .then(function (res) {
+                if (!res.ok) throw new Error('HTTP ' + res.status);
+                return res.json();
+            })
+            .then(function (data) {
+                var normalized = ApiService.normalizeData(data);
+                ApiService.saveData(normalized);
+                return normalized;
+            })
+            .catch(function () {
+                var data = JSON.parse(JSON.stringify(ApiService._defaultData));
+                data = ApiService.normalizeData(data);
+                ApiService.saveData(data);
+                return data;
+            });
     },
 
     saveData: function (data) {
-        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(data));
+        localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.normalizeData(data)));
+    },
+
+    normalizeData: function (data) {
+        data.upbjjList = data.upbjjList || [];
+        data.kategoriList = data.kategoriList || [];
+        data.pengirimanList = (data.pengirimanList || []).map(function (p) {
+            if (p.kode === 'REG' && p.nama.indexOf('JNE') === -1) return { kode: p.kode, nama: 'JNE Regular' };
+            if (p.kode === 'EXP' && p.nama.indexOf('JNE') === -1) return { kode: p.kode, nama: 'JNE Express' };
+            return p;
+        });
+        data.paket = data.paket || [];
+        data.stok = data.stok || [];
+        var trackingUnik = [];
+        var nomorSudahAda = {};
+        (data.tracking || []).forEach(function (item) {
+            var nomor = Object.keys(item)[0];
+            if (!nomor || !item[nomor]) return;
+            if (nomorSudahAda[nomor]) return;
+            nomorSudahAda[nomor] = true;
+            var detail = item[nomor];
+            if (detail.ekspedisi === 'JNE') detail.ekspedisi = 'JNE Regular';
+            detail.perjalanan = detail.perjalanan || [];
+            detail.tanggalKirim = ApiService.formatTanggalIndo(detail.tanggalKirim);
+            trackingUnik.push(item);
+        });
+        data.tracking = trackingUnik;
+        return data;
+    },
+
+    formatTanggalIndo: function (nilai) {
+        if (!nilai) return '';
+        if (/^\d{4}-\d{2}-\d{2}$/.test(nilai)) {
+            var parts = nilai.split('-');
+            var bulan = ['Januari','Februari','Maret','April','Mei','Juni',
+                         'Juli','Agustus','September','Oktober','November','Desember'];
+            return Number(parts[2]) + ' ' + bulan[Number(parts[1]) - 1] + ' ' + parts[0];
+        }
+        return nilai;
     }
 };
